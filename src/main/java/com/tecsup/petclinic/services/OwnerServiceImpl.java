@@ -30,4 +30,19 @@ public class OwnerServiceImpl implements OwnerService {
     public List<Owner> findByCity(String city) {
         return ownerRepository.findByCity(city);
     }
+
+    @Override
+    public Owner create(Owner owner) {
+        return ownerRepository.save(owner);
+    }
+
+    @Override
+    public Owner update(Owner owner) {
+        return ownerRepository.save(owner);
+    }
+
+    @Override
+    public void delete(Long id) {
+        ownerRepository.deleteById(id);
+    }
 }
