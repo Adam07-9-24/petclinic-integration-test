@@ -2,7 +2,7 @@ package com.tecsup.petclinic.webs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tecsup.petclinic.dtos.OwnerDTO;
-import com.tecsup.petclinic.exceptions.OwnerNotFoundException;
+import com.tecsup.petclinic.entities.Owner;
 import com.tecsup.petclinic.services.OwnerService;
 import com.tecsup.petclinic.util.TObjectCreator;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +16,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +46,7 @@ public class OwnerControllerMockitoTest {
 	@Test
 	public void testUpdateOwner() throws Exception {
 		OwnerDTO ownerTO = TObjectCreator.getOwnerTO();
+		Owner owner = toEntity(ownerTO);
 		OwnerDTO updateOwnerTO = OwnerDTO.builder()
 				.id(ownerTO.getId())
 				.firstName(ownerTO.getFirstName())
@@ -52,11 +55,12 @@ public class OwnerControllerMockitoTest {
 				.city("Monona")
 				.telephone("6085559999")
 				.build();
+		Owner updatedOwner = toEntity(updateOwnerTO);
 
 		Mockito.when(ownerService.findById(ownerTO.getId()))
-				.thenReturn(ownerTO);
-		Mockito.when(ownerService.update(any(OwnerDTO.class)))
-				.thenReturn(updateOwnerTO);
+				.thenReturn(Optional.of(owner));
+		Mockito.when(ownerService.update(any(Owner.class)))
+				.thenReturn(updatedOwner);
 
 		mockMvc.perform(put("/owners/" + ownerTO.getId())
 						.content(om.writeValueAsString(updateOwnerTO))
@@ -73,8 +77,10 @@ public class OwnerControllerMockitoTest {
 
 	@Test
 	public void testDeleteOwner() throws Exception {
-		Long id = TObjectCreator.getOwnerTO().getId();
+		Owner owner = toEntity(TObjectCreator.getOwnerTO());
+		Long id = owner.getId();
 
+		Mockito.when(ownerService.findById(id)).thenReturn(Optional.of(owner));
 		Mockito.doNothing().when(ownerService).delete(id);
 
 		mockMvc.perform(delete("/owners/" + id))
@@ -86,11 +92,21 @@ public class OwnerControllerMockitoTest {
 	public void testDeleteOwnerKO() throws Exception {
 		Long id = 1000L;
 
-		Mockito.doThrow(new OwnerNotFoundException("Record not found...!"))
-				.when(ownerService).delete(id);
+		Mockito.when(ownerService.findById(id)).thenReturn(Optional.empty());
 
 		mockMvc.perform(delete("/owners/" + id))
 				.andDo(print())
 				.andExpect(status().isNotFound());
+	}
+
+	private Owner toEntity(OwnerDTO ownerTO) {
+		Owner owner = new Owner();
+		owner.setId(ownerTO.getId());
+		owner.setFirstName(ownerTO.getFirstName());
+		owner.setLastName(ownerTO.getLastName());
+		owner.setAddress(ownerTO.getAddress());
+		owner.setCity(ownerTO.getCity());
+		owner.setTelephone(ownerTO.getTelephone());
+		return owner;
 	}
 }
